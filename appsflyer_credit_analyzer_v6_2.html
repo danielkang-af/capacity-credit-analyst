@@ -1200,26 +1200,26 @@ function renderTableData(){
         <thead>
           <tr>
             <th rowspan="2" style="vertical-align:middle" onclick="tblSortByDate()" class="${tblSortCol==='dt'?'sorted':''}">${t('colDate')} ${sortIcon}</th>
-            ${evCols.map(({et,span})=>`<th colspan="${span}" style="text-align:center;border-left:2px solid ${evColor(et)}44;background:${evColor(et)}0d;color:${evColor(et)};font-size:11px">${RULES[et]?.label||et}</th>`).join('')}
             <th colspan="${showBoth?2:1}" style="text-align:center;background:#f0f4ff;font-size:11px;color:#185FA5">Total</th>
+            ${evCols.map(({et,span})=>`<th colspan="${span}" style="text-align:center;border-left:2px solid ${evColor(et)}44;background:${evColor(et)}0d;color:${evColor(et)};font-size:11px">${RULES[et]?.label||et}</th>`).join('')}
           </tr>
           <tr>
-            ${evCols.map(({et,cols2})=>cols2.join('')).join('')}
             ${showVol?`<th style="text-align:right;background:#f0f4ff;font-size:10px;color:#185FA5">Vol</th>`:''}
             ${showCr?`<th style="text-align:right;background:#f0f4ff;font-size:10px;color:#185FA5">Cr</th>`:''}
+            ${evCols.map(({et,cols2})=>cols2.join('')).join('')}
           </tr>
         </thead>
         <tbody>
           <tr class="total-row">
             <td>${t('tableTotalRow')}</td>
+            ${showVol?`<td style="text-align:right">${fmtN(totalRowVol)}</td>`:''}
+            ${showCr?`<td style="text-align:right;color:#185FA5">${fmtCr(totalRowCr)}</td>`:''}
             ${checkedEvs.map(et=>{
               const cells=[];
               if(showVol)cells.push(`<td style="text-align:right;border-left:2px solid ${evColor(et)}33">${fmtN(Math.round(totals[et].vol))}</td>`);
               if(showCr)cells.push(`<td style="text-align:right">${fmtCr(totals[et].cr)}</td>`);
               return cells.join('');
             }).join('')}
-            ${showVol?`<td style="text-align:right">${fmtN(totalRowVol)}</td>`:''}
-            ${showCr?`<td style="text-align:right;color:#185FA5">${fmtCr(totalRowCr)}</td>`:''}
           </tr>
           ${dates.map(dt=>{
             const rowData=checkedEvs.map(et=>{
@@ -1233,9 +1233,9 @@ function renderTableData(){
             const rowCr=parseFloat(checkedEvs.reduce((s,et)=>s+(pivot[dt]?.[et]?.cr||0),0).toFixed(4));
             return`<tr>
               <td style="font-weight:500">${fmtDt(dt)}</td>
-              ${rowData}
               ${showVol?`<td style="text-align:right;background:#f8faff;font-weight:500">${fmtN(rowVol)}</td>`:''}
               ${showCr?`<td style="text-align:right;background:#f8faff;font-weight:600;color:#185FA5">${fmtCr(rowCr)}</td>`:''}
+              ${rowData}
             </tr>`;
           }).join('')}
         </tbody>
