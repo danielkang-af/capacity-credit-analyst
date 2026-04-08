@@ -178,6 +178,16 @@ tr:last-child td{border-bottom:none}
 .file-item-remove:hover{color:#E24B4A}
 .file-add-btn{width:100%;padding:8px;border:1.5px dashed #ddd;border-radius:8px;background:none;cursor:pointer;font-size:12px;color:#888;transition:all .15s;font-family:'Space Grotesk',sans-serif}
 .file-add-btn:hover{border-color:#185FA5;color:#185FA5}
+
+.tooltip-wrap{position:relative;display:inline-flex;align-items:center;cursor:help}
+.tooltip-icon{width:14px;height:14px;border-radius:50%;border:1.5px solid #bbb;color:#aaa;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1;font-family:'Space Grotesk',sans-serif}
+.tooltip-box{display:none;position:absolute;top:calc(100% + 8px);right:0;background:#222;color:#fff;font-size:11px;padding:8px 12px;border-radius:8px;z-index:999;line-height:1.6;font-family:'Space Grotesk',sans-serif;width:210px;box-shadow:0 4px 16px rgba(0,0,0,0.25);pointer-events:none}
+.tooltip-box::before{content:'';position:absolute;bottom:100%;right:10px;border:5px solid transparent;border-bottom-color:#222}
+.tooltip-wrap:hover .tooltip-box{display:block}
+
+.data-table th[draggable]{cursor:grab;user-select:none}
+.data-table th[draggable]:active{cursor:grabbing}
+.data-table th.tbl-drag-over{outline:2px solid #185FA5;outline-offset:-2px}
 </style>
 </head>
 <body>
@@ -191,8 +201,12 @@ tr:last-child td{border-bottom:none}
     <div class="header-meta">
       <button class="update-btn" onclick="document.getElementById('rnModal').classList.add('open')">Release Notes</button>
       <div class="precise-wrap" style="display:flex;align-items:center;gap:6px">
-        <span style="font-size:11px;color:#aaa;font-weight:500">Precise</span>
-        <button class="precise-toggle" id="preciseToggle" onclick="togglePrecise()" title="소수점 4자리 표시">
+        <span style="font-size:11px;color:#aaa;font-weight:500">Precise mode</span>
+        <div class="tooltip-wrap">
+          <div class="tooltip-icon">?</div>
+          <div class="tooltip-box">크레딧을 <strong>소수점 4자리</strong>까지 표시합니다.<br>기본(OFF)은 반올림 정수로 표시돼요.<br><br>OFF: 22,796 cr<br>ON: 22,796.0232 cr</div>
+        </div>
+        <button class="precise-toggle" id="preciseToggle" onclick="togglePrecise()">
           <span class="precise-track"><span class="precise-thumb"></span></span>
         </button>
       </div>
@@ -200,7 +214,7 @@ tr:last-child td{border-bottom:none}
         <button class="lang-btn active" id="langKo" onclick="setLang('ko')">KO</button>
         <button class="lang-btn" id="langEn" onclick="setLang('en')">EN</button>
       </div>
-      <span class="version-tag">mk I · v6.13</span>
+      <span class="version-tag">mk I · v6.14</span>
       <span class="badge">PRO</span>
     </div>
   </div>
@@ -308,7 +322,7 @@ tr:last-child td{border-bottom:none}
     <div id="tabAI" class="panel"></div>
   </div>
     </div><!-- /section-results-content -->
-    <div class="af-footer">created by Daniel Kang</div>
+    <div class="af-footer">created by Daniel Kang &nbsp;·&nbsp; 🐛 Bug report? <a href="https://appsflyer.enterprise.slack.com/team/danielkang" style="color:#999;text-decoration:underline;text-underline-offset:2px">DM me on Slack</a></div>
     <div class="section-results-bg"></div>
   </div><!-- /section-results -->
 
@@ -329,8 +343,10 @@ tr:last-child td{border-bottom:none}
 const RULES = {
   impressions:           { unit:1e6,  rate:1,  label:'Impressions' },
   clicks:                { unit:1e6,  rate:2,  label:'Clicks' },
-  'non organic installs':{ unit:1e5,  rate:80, label:'Non-Organic Installs' },
-  're-attribution':      { unit:1e5,  rate:80, label:'Re-attribution' },
+  'non organic installs':          { unit:1e5,  rate:80, label:'Non-Organic Installs (RTA)' },
+  'non organic installs (skan)':   { unit:1e5,  rate:80, label:'Non Organic Installs (SKAN)' },
+  're-attribution':                { unit:1e5,  rate:80, label:'Re-attribution (RTA)' },
+  're-attribution (skan)':         { unit:1e5,  rate:80, label:'Re-attribution (SKAN)' },
   're-engagements':      { unit:1e5,  rate:10, label:'Re-engagements' },
   'in-app events':       { unit:1e6,  rate:2,  label:'In-App Events' },
   'datalocker-aggregated':{ unit:1e6,  rate:2,  label:'Data Locker (Aggregated)' },
@@ -510,10 +526,21 @@ function togglePrecise(){
   if(lastG)runAll();
 }
 function fmtCr(n){
-  if(preciseMode)return parseFloat(n).toFixed(4);
-  // integer mode: round to nearest integer, show with comma
+  if(preciseMode){
+    const num=parseFloat(n);
+    const intPart=Math.floor(num).toLocaleString();
+    const decPart=num.toFixed(4).split('.')[1];
+    return `${intPart}<span style="color:#185FA5;font-size:.9em">.${decPart}</span>`;
+  }
   const rounded=Math.round(parseFloat(n));
   return rounded.toLocaleString();
+}
+function fmtCrPlain(n){
+  if(preciseMode){
+    const num=parseFloat(n);
+    return num.toLocaleString(undefined,{minimumFractionDigits:4,maximumFractionDigits:4});
+  }
+  return Math.round(parseFloat(n)).toLocaleString();
 }
 function calcCr(key,vol){const r=RULES[key];return r?parseFloat(((vol/r.unit)*r.rate).toFixed(4)):0;}
 function fmt(n,d=4){return parseFloat(n).toFixed(d);}
@@ -1015,7 +1042,7 @@ async function renderAI(){
   const g=lastG;const grps=lastGrps;const keys=Object.keys(grps).sort();
   const trendSummary=keys.map((k,i)=>{const prev=i>0?grps[keys[i-1]].totalCr:null;const p=pct(grps[k].totalCr,prev);return`${k}: ${fmt(grps[k].totalCr)} credits${p?` (${parseFloat(p)>=0?'+':''}${p}% vs prev)`:''} — top: ${RULES[Object.entries(grps[k].events).sort((a,b)=>b[1].cr-a[1].cr)[0]?.[0]]?.label||'N/A'}`;}).join('\n');
   try{
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`You are an AppsFlyer credit analytics expert. Analyze and generate a structured professional client-facing report in Korean.\n\nCredit Rules:\n- Impressions: 1cr/1M\n- Clicks: 2cr/1M\n- Non-Organic Installs: 80cr/100K\n- Re-attribution: 80cr/100K\n- Re-engagements: 10cr/100K\n- In-App Events: 2cr/1M\n\nTotal Credits: ${fmtCr(g.grandTotal)}\nGrouping: ${lastGBy}\n\nBreakdown:\n${Object.entries(g.breakdown).map(([et,d])=>`- ${RULES[et]?.label||et}: ${fmtN(d.volume)} → ${fmtCr(d.credits)} cr (${((d.credits/g.grandTotal)*100).toFixed(1)}%)`).join('\n')}\n\nTrend:\n${trendSummary}\n\nGenerate 4 sections in Korean (plain text, no markdown):\n1. 핵심 요약\n2. 주요 크레딧 드라이버\n3. 트렌드 분석\n4. 최적화 권고사항\n\nTone: professional, confident, client-facing.`}]})});
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`You are an AppsFlyer credit analytics expert. Analyze and generate a structured professional client-facing report in Korean.\n\nCredit Rules:\n- Impressions: 1cr/1M\n- Clicks: 2cr/1M\n- Non-Organic Installs: 80cr/100K\n- Re-attribution: 80cr/100K\n- Re-engagements: 10cr/100K\n- In-App Events: 2cr/1M\n\nTotal Credits: ${fmtCrPlain(g.grandTotal)}\nGrouping: ${lastGBy}\n\nBreakdown:\n${Object.entries(g.breakdown).map(([et,d])=>`- ${RULES[et]?.label||et}: ${fmtN(d.volume)} → ${fmtCrPlain(d.credits)} cr (${((d.credits/g.grandTotal)*100).toFixed(1)}%)`).join('\n')}\n\nTrend:\n${trendSummary}\n\nGenerate 4 sections in Korean (plain text, no markdown):\n1. 핵심 요약\n2. 주요 크레딧 드라이버\n3. 트렌드 분석\n4. 최적화 권고사항\n\nTone: professional, confident, client-facing.`}]})});
     const d=await resp.json();
     const text=d.content?.find(b=>b.type==='text')?.text||'분석 결과를 가져올 수 없습니다.';
     const sections=text.split(/\n(?=\d\.\s|핵심|주요|트렌드|최적화)/).filter(s=>s.trim());
@@ -1183,6 +1210,17 @@ function renderTableData(){
           </tr>
         </thead>
         <tbody>
+          <tr class="total-row">
+            <td>${t('tableTotalRow')}</td>
+            ${checkedEvs.map(et=>{
+              const cells=[];
+              if(showVol)cells.push(`<td style="text-align:right;border-left:2px solid ${evColor(et)}33">${fmtN(Math.round(totals[et].vol))}</td>`);
+              if(showCr)cells.push(`<td style="text-align:right">${fmtCr(totals[et].cr)}</td>`);
+              return cells.join('');
+            }).join('')}
+            ${showVol?`<td style="text-align:right">${fmtN(totalRowVol)}</td>`:''}
+            ${showCr?`<td style="text-align:right;color:#185FA5">${fmtCr(totalRowCr)}</td>`:''}
+          </tr>
           ${dates.map(dt=>{
             const rowData=checkedEvs.map(et=>{
               const v=pivot[dt]?.[et];
@@ -1200,20 +1238,52 @@ function renderTableData(){
               ${showCr?`<td style="text-align:right;background:#f8faff;font-weight:600;color:#185FA5">${fmtCr(rowCr)}</td>`:''}
             </tr>`;
           }).join('')}
-          <tr class="total-row">
-            <td>${t('tableTotalRow')}</td>
-            ${checkedEvs.map(et=>{
-              const cells=[];
-              if(showVol)cells.push(`<td style="text-align:right;border-left:2px solid ${evColor(et)}33">${fmtN(Math.round(totals[et].vol))}</td>`);
-              if(showCr)cells.push(`<td style="text-align:right">${fmtCr(totals[et].cr)}</td>`);
-              return cells.join('');
-            }).join('')}
-            ${showVol?`<td style="text-align:right">${fmtN(totalRowVol)}</td>`:''}
-            ${showCr?`<td style="text-align:right;color:#185FA5">${fmtCr(totalRowCr)}</td>`:''}
-          </tr>
         </tbody>
       </table>
     </div>`;
+}
+
+
+// ── Column drag-and-drop ─────────────────────────────────────────────────────
+let _dragEvIdx=null;
+function initColDrag(){
+  const ths=[...document.querySelectorAll('#tableDataWrap .data-table thead tr:nth-child(1) th')];
+  // ev headers start at index 1 (after Date), end before Total cols
+  ths.forEach((th,i)=>{
+    th.removeAttribute('draggable');
+    th.classList.remove('tbl-drag-over');
+  });
+  const checkedEvs=sortedEtKeys([...document.querySelectorAll('.tbl-ev-cb:checked')].map(cb=>cb.value));
+  // col 0 = Date, col 1..n = ev groups, last 1-2 = Total
+  checkedEvs.forEach((et,i)=>{
+    const thIdx=i+1;
+    const th=ths[thIdx];
+    if(!th)return;
+    th.draggable=true;
+    th.dataset.evidx=i;
+    th.ondragstart=e=>{_dragEvIdx=i;th.style.opacity='0.4';e.dataTransfer.effectAllowed='move';};
+    th.ondragend=e=>{th.style.opacity='';ths.forEach(t=>t.classList.remove('tbl-drag-over'));};
+    th.ondragover=e=>{e.preventDefault();th.classList.add('tbl-drag-over');};
+    th.ondragleave=()=>th.classList.remove('tbl-drag-over');
+    th.ondrop=e=>{
+      e.preventDefault();
+      th.classList.remove('tbl-drag-over');
+      const destIdx=parseInt(th.dataset.evidx);
+      if(_dragEvIdx===null||_dragEvIdx===destIdx){_dragEvIdx=null;return;}
+      // Reorder checkboxes in DOM to reflect new order
+      const cbContainer=document.querySelector('.tbl-ev-cb')?.closest('div');
+      if(!cbContainer)return;
+      const labels=[...cbContainer.querySelectorAll('label')];
+      const labelMap={};
+      labels.forEach(l=>{const v=l.querySelector('input')?.value;if(v)labelMap[v]=l;});
+      const newOrder=[...checkedEvs];
+      const [moved]=newOrder.splice(_dragEvIdx,1);
+      newOrder.splice(destIdx,0,moved);
+      newOrder.forEach(et=>{if(labelMap[et])cbContainer.appendChild(labelMap[et]);});
+      _dragEvIdx=null;
+      renderTableData();
+    };
+  });
 }
 
 function tblSortByDate(){
@@ -1270,6 +1340,17 @@ document.getElementById('sampleBtn').addEventListener('click',e=>{
 function renderRNContent(){
   const el=document.getElementById('rnContent');if(!el)return;
   const isEn=lang==='en';
+  const v614=isEn?[
+    'Table Total row moved to top by default',
+    'Table column drag-and-drop — reorder event columns by dragging headers',
+    'Precise mode label + tooltip — hover ? icon to see what it does',
+    'Footer: bug report Slack DM link added',
+  ]:[
+    'Table 합계(Total) 행 기본값으로 최상단 이동',
+    'Table 컬럼 드래그앤드롭 — 헤더 드래그로 이벤트 열 순서 변경',
+    'Precise mode 텍스트 + 툴팁 추가 — ? 아이콘 호버 시 설명 표시',
+    '하단 푸터: Slack DM 버그 리포트 링크 추가',
+  ];
   const v613=isEn?[
     'Data Locker always included — fixed app/media filter excluding rows with empty bundle_id or media_source',
     'SKAN detection strengthened — fallback to direct record_by key access regardless of cols mapping',
@@ -1418,7 +1499,8 @@ function renderRNContent(){
   ];
 
   const sections=[
-    {tag:'v6.13',date:'2026-04-08',current:true,items:v613},
+    {tag:'v6.14',date:'2026-04-08',current:true,items:v614},
+    {tag:'v6.13',date:'2026-04-08',items:v613},
     {tag:'v6.12',date:'2026-04-08',items:v612},
     {tag:'v6.11',date:'2026-04-08',items:v611},
     {tag:'v6.10',date:'2026-04-08',items:v610},
