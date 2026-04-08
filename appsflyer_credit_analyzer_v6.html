@@ -200,7 +200,7 @@ tr:last-child td{border-bottom:none}
         <button class="lang-btn active" id="langKo" onclick="setLang('ko')">KO</button>
         <button class="lang-btn" id="langEn" onclick="setLang('en')">EN</button>
       </div>
-      <span class="version-tag">mk I · 2026-04-08</span>
+      <span class="version-tag">mk I · v6.13</span>
       <span class="badge">PRO</span>
     </div>
   </div>
@@ -481,7 +481,8 @@ function applyLangToStatic(){
 function mapEv(raw, recordBy) {
   if (!raw) return null;
   const s = String(raw).toLowerCase().trim().replace(/\s+/g,' ').replace(/_/g,' ');
-  const isSkan = recordBy && String(recordBy).toLowerCase().includes('skad');
+  const rbLow = recordBy ? String(recordBy).toLowerCase() : '';
+  const isSkan = rbLow.includes('skad') || rbLow.includes('skan');
   if (s==='impressions'||s==='impression') return 'impressions';
   if (s==='clicks'||s==='click') return 'clicks';
   if (s==='non organic installs'||s==='non-organic installs'||s==='non organic install'||s==='non-organic install'||s==='install'||s==='non organic')
@@ -650,7 +651,7 @@ function mergeAndInit(){
   data=merged;
   cols=detectCols(data);
   const evVals=[...new Set(data.map(r=>r[cols.event]).filter(Boolean))];
-  const unmapped=evVals.filter(v=>!mapEv(v,null));
+  const unmapped=evVals.filter(v=>!mapEv(v, cols.recordBy?(data.find(r=>r[cols.event]===v)||{})[cols.recordBy]||null:null));
   initAppFilter();
   initMediaFilter();
   autoLoadAccountId();
@@ -774,12 +775,12 @@ document.addEventListener('change',function(e){
   }
 });
 
-function computeGlobal(d){const c=getCurrentCols();const totV={};d.forEach(r=>{const et=mapEv(r[c.event],c.recordBy?r[c.recordBy]:null);if(!et)return;const v=parseFloat(r[c.volume])||0;totV[et]=(totV[et]||0)+v;});let grand=0;const breakdown={};Object.entries(totV).forEach(([et,v])=>{const cr=calcCr(et,v);breakdown[et]={volume:v,credits:cr};grand+=cr;});return{breakdown,grandTotal:parseFloat(grand.toFixed(4))};}
+function computeGlobal(d){const c=getCurrentCols();const totV={};d.forEach(r=>{const rb=c.recordBy?r[c.recordBy]:(r['record_by']||r['record by']||null);const et=mapEv(r[c.event],rb);if(!et)return;const v=parseFloat(r[c.volume])||0;totV[et]=(totV[et]||0)+v;});let grand=0;const breakdown={};Object.entries(totV).forEach(([et,v])=>{const cr=calcCr(et,v);breakdown[et]={volume:v,credits:cr};grand+=cr;});return{breakdown,grandTotal:parseFloat(grand.toFixed(4))};}
 function groupData(d,groupBy){
   const c=getCurrentCols();const grps={};
   const customFrom=document.getElementById('customFrom')?.value||'';
   const customTo=document.getElementById('customTo')?.value||'';
-  d.forEach(r=>{const et=mapEv(r[c.event],c.recordBy?r[c.recordBy]:null);if(!et)return;const v=parseFloat(r[c.volume])||0;const dt=fmtDt(r[c.date]||'');const ms=r[c.media]||'unknown';
+  d.forEach(r=>{const rb=c.recordBy?r[c.recordBy]:(r['record_by']||r['record by']||null);const et=mapEv(r[c.event],rb);if(!et)return;const v=parseFloat(r[c.volume])||0;const dt=fmtDt(r[c.date]||'');const ms=r[c.media]||'unknown';
   if(groupBy==='custom'){if(customFrom&&dt<customFrom)return;if(customTo&&dt>customTo)return;}
   let key;if(groupBy==='daily'||groupBy==='custom')key=dt;else if(groupBy==='weekly'){const dd=new Date(dt);const w=Math.ceil(dd.getDate()/7);key=`${dt.slice(0,7)}-W${w}`;}else if(groupBy==='monthly')key=dt.slice(0,7)||'all';else key=ms;if(!grps[key])grps[key]={events:{},totalCr:0,totalVol:0};if(!grps[key].events[et])grps[key].events[et]={vol:0,cr:0};grps[key].events[et].vol+=v;});
   Object.values(grps).forEach(g=>{let tc=0,tv=0;Object.entries(g.events).forEach(([et,ev])=>{ev.cr=parseFloat(calcCr(et,ev.vol).toFixed(4));tc+=ev.cr;tv+=ev.vol;});g.totalCr=parseFloat(tc.toFixed(4));g.totalVol=tv;});
@@ -1044,7 +1045,7 @@ function renderTable(){
   const minDate=allDates[0]||'';
   const maxDate=allDates[allDates.length-1]||'';
   const allApps=cols.appBundle?[...new Set(filtered.map(r=>r[cols.appBundle]).filter(Boolean))].sort():[];
-  const allEvTypes=sortedEtKeys([...new Set(filtered.map(r=>mapEv(r[c.event],c.recordBy?r[c.recordBy]:null)).filter(Boolean))]);
+  const allEvTypes=sortedEtKeys([...new Set(filtered.map(r=>{const rb=c.recordBy?r[c.recordBy]:(r['record_by']||r['record by']||null);return mapEv(r[c.event],rb);}).filter(Boolean))]);
 
   document.getElementById('tabTable').innerHTML=`
     <div class="table-controls">
@@ -1113,7 +1114,7 @@ function getPivotData(){
     const dt=fmtDt(r[c.date]||'');
     if(from&&dt<from)return;
     if(to&&dt>to)return;
-    const et=mapEv(r[c.event],c.recordBy?r[c.recordBy]:null);if(!et)return;
+    const rb=c.recordBy?r[c.recordBy]:(r['record_by']||r['record by']||null);const et=mapEv(r[c.event],rb);if(!et)return;
     if(!checkedEvs.has(et))return;
     const app=cols.appBundle?r[cols.appBundle]||'':'';
     if(appFilter&&app!==appFilter)return;
@@ -1269,6 +1270,21 @@ document.getElementById('sampleBtn').addEventListener('click',e=>{
 function renderRNContent(){
   const el=document.getElementById('rnContent');if(!el)return;
   const isEn=lang==='en';
+  const v613=isEn?[
+    'Data Locker always included — fixed app/media filter excluding rows with empty bundle_id or media_source',
+    'SKAN detection strengthened — fallback to direct record_by key access regardless of cols mapping',
+    'tc/gc ReferenceError fixed in Breakdown chart render (missing variable declaration)',
+    'Media source grouping option removed from period selector (media filter already exists)',
+    'Date display simplified — T00:00:00Z suffix stripped across all charts and tables',
+    'Syntax error fixed in event banner (malformed ternary operator)',
+  ]:[
+    'Data Locker 항상 포함 — app_bundle_id/media_source 빈값 행이 앱·미디어 필터에서 제외되던 문제 수정',
+    'SKAN 감지 강화 — cols 매핑 여부와 무관하게 record_by 컬럼 직접 접근으로 폴백',
+    'Breakdown 차트 렌더링 tc/gc ReferenceError 수정 (변수 선언 누락)',
+    '기간 드롭다운에서 미디어소스별 옵션 제거 (미디어소스 필터 별도 존재)',
+    '날짜 표시 간소화 — T00:00:00Z 접미사 전체 차트/테이블에서 제거',
+    '이벤트 배너 문법 오류 수정 (삼항 연산자 오류)',
+  ];
   const v612=isEn?[
     'Data Locker now visible everywhere — fixed duplicate detectCols bug that blocked unit_type recognition',
     'Default chart type changed to bar across Overview and Breakdown tabs',
@@ -1402,7 +1418,8 @@ function renderRNContent(){
   ];
 
   const sections=[
-    {tag:'v6.12',date:'2026-04-08',current:true,items:v612},
+    {tag:'v6.13',date:'2026-04-08',current:true,items:v613},
+    {tag:'v6.12',date:'2026-04-08',items:v612},
     {tag:'v6.11',date:'2026-04-08',items:v611},
     {tag:'v6.10',date:'2026-04-08',items:v610},
     {tag:'v6.9',date:'2026-04-08',items:v69},
