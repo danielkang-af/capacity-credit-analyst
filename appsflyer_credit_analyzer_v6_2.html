@@ -214,7 +214,7 @@ tr:last-child td{border-bottom:none}
         <button class="lang-btn active" id="langKo" onclick="setLang('ko')">KO</button>
         <button class="lang-btn" id="langEn" onclick="setLang('en')">EN</button>
       </div>
-      <span class="version-tag">mk I · v6.14</span>
+      <span class="version-tag">mk I · v6.15</span>
       <span class="badge">PRO</span>
     </div>
   </div>
@@ -1096,10 +1096,22 @@ function renderTable(){
       ${allApps.length>1?`<div class="table-ctrl-divider"></div>
       <div class="table-ctrl-group">
         <label>${t('tableAppFilter')}</label>
-        <select class="ev-select" id="tblAppFilter">
-          <option value="">${t('appAll')}</option>
-          ${allApps.map(b=>{const nm=cols.appName?([...new Set(filtered.filter(r=>r[cols.appBundle]===b).map(r=>r[cols.appName]).filter(Boolean))][0]||b):b;return`<option value="${b}">${nm}</option>`;}).join('')}
-        </select>
+        <div class="app-filter-wrap" style="display:inline-block;position:relative">
+          <button class="app-filter-btn" id="tblAppFilterBtn" onclick="toggleDropdown(event,'tblAppDropdown')" style="min-width:100px">
+            <span id="tblAppFilterLabel">${t('appAll')}</span>
+            <span class="count-badge" id="tblAppFilterCount"></span>
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="margin-left:4px;flex-shrink:0"><path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </button>
+          <div class="app-dropdown" id="tblAppDropdown" style="display:none;position:absolute;top:calc(100% + 4px);left:0;z-index:300;min-width:200px;max-height:240px;overflow-y:auto;background:#fff;border:0.5px solid #ddd;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.1);padding:6px 0">
+            <label class="app-item" style="padding:6px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:12px">
+              <input type="checkbox" id="tblAppAll" checked onchange="tblToggleAllApps(this)"> 전체 선택
+            </label>
+            <div style="height:1px;background:#eee;margin:4px 0"></div>
+            <div id="tblAppList">
+              ${allApps.map(b=>{const nm=cols.appName?([...new Set(filtered.filter(r=>r[cols.appBundle]===b).map(r=>r[cols.appName]).filter(Boolean))][0]||b):b;const icon=getPlatformIcon(b);return`<label class="app-item" style="padding:5px 12px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:12px"><input type="checkbox" class="tbl-app-cb" value="${b}" checked onchange="onTblAppCheck()">${icon}<span>${nm!==b?nm:b}</span></label>`;}).join('')}
+            </div>
+          </div>
+        </div>
       </div>`:''}
       <div class="table-ctrl-divider"></div>
       <div class="table-ctrl-group">
@@ -1114,7 +1126,7 @@ function renderTable(){
     </div>
     <div id="tableDataWrap"></div>`;
 
-  document.querySelectorAll('.tbl-ev-cb, #tblDateFrom, #tblDateTo, #tblAppFilter').forEach(el=>{
+  document.querySelectorAll('.tbl-ev-cb, #tblDateFrom, #tblDateTo').forEach(el=>{
     if(el) el.addEventListener('change', renderTableData);
   });
   renderTableData();
@@ -1132,7 +1144,7 @@ function getPivotData(){
   const c=getCurrentCols();
   const from=document.getElementById('tblDateFrom')?.value||'';
   const to=document.getElementById('tblDateTo')?.value||'';
-  const appFilter=document.getElementById('tblAppFilter')?.value||'';
+  const tblAppCbs=[...document.querySelectorAll('.tbl-app-cb:checked')].map(cb=>cb.value);
   const checkedEvs=new Set([...document.querySelectorAll('.tbl-ev-cb:checked')].map(cb=>cb.value));
 
   // aggregate: date → { et: {vol, cr} }
@@ -1144,7 +1156,7 @@ function getPivotData(){
     const rb=c.recordBy?r[c.recordBy]:(r['record_by']||r['record by']||null);const et=mapEv(r[c.event],rb);if(!et)return;
     if(!checkedEvs.has(et))return;
     const app=cols.appBundle?r[cols.appBundle]||'':'';
-    if(appFilter&&app!==appFilter)return;
+    if(tblAppCbs.length>0&&app&&!tblAppCbs.includes(app))return;
     const vol=parseFloat(r[c.volume])||0;
     if(!pivot[dt])pivot[dt]={};
     if(!pivot[dt][et])pivot[dt][et]={vol:0,cr:0};
@@ -1286,6 +1298,26 @@ function initColDrag(){
   });
 }
 
+
+function tblToggleAllApps(cb){
+  document.querySelectorAll('.tbl-app-cb').forEach(el=>el.checked=cb.checked);
+  onTblAppCheck();
+}
+function onTblAppCheck(){
+  const cbs=[...document.querySelectorAll('.tbl-app-cb')];
+  const checked=cbs.filter(cb=>cb.checked);
+  const allCb=document.getElementById('tblAppAll');
+  if(allCb)allCb.checked=checked.length===cbs.length;
+  const total=cbs.length;
+  const lbl=document.getElementById('tblAppFilterLabel');
+  const cnt=document.getElementById('tblAppFilterCount');
+  if(lbl){
+    if(checked.length===total){lbl.textContent='앱 전체';if(cnt)cnt.textContent='';}
+    else{lbl.textContent='앱 선택됨';if(cnt)cnt.textContent=checked.length+'개';}
+  }
+  renderTableData();
+}
+
 function tblSortByDate(){
   tblSortAsc=!tblSortAsc;
   tblSortCol='dt';
@@ -1340,6 +1372,17 @@ document.getElementById('sampleBtn').addEventListener('click',e=>{
 function renderRNContent(){
   const el=document.getElementById('rnContent');if(!el)return;
   const isEn=lang==='en';
+  const v615=isEn?[
+    'v6.14a — SKAN credits fixed: Non Organic Installs (SKAN) and Re-attribution (SKAN) were missing from RULES object, causing 0.0000 cr despite correct volume',
+    'v6.14b — Precise mode: comma separator added to integer part (e.g. 22,796.0232), decimal digits shown in blue',
+    'v6.14c — Table Total column moved to second position (after Date)',
+    'v6.14d — Table app filter upgraded to multi-select checkbox dropdown (same as Overview)',
+  ]:[
+    'v6.14a — SKAN 크레딧 계산 수정: Non Organic Installs (SKAN) · Re-attribution (SKAN)이 RULES 객체에 누락되어 볼륨이 있어도 0.0000 cr로 표시되던 문제 해결',
+    'v6.14b — Precise mode 개선: 정수 부분 천 단위 쉼표 구분 적용, 소수점 이하 파란색으로 구분 표시',
+    'v6.14c — Table Total 컬럼 두 번째 위치로 이동 (날짜 바로 다음)',
+    'v6.14d — Table 앱 필터를 단일 select → 체크박스 다중선택 드롭다운으로 교체 (Overview와 동일)',
+  ];
   const v614=isEn?[
     'Table Total row moved to top by default',
     'Table column drag-and-drop — reorder event columns by dragging headers',
@@ -1499,7 +1542,8 @@ function renderRNContent(){
   ];
 
   const sections=[
-    {tag:'v6.14',date:'2026-04-08',current:true,items:v614},
+    {tag:'v6.15',date:'2026-04-08',current:true,items:v615},
+    {tag:'v6.14',date:'2026-04-08',items:v614},
     {tag:'v6.13',date:'2026-04-08',items:v613},
     {tag:'v6.12',date:'2026-04-08',items:v612},
     {tag:'v6.11',date:'2026-04-08',items:v611},
