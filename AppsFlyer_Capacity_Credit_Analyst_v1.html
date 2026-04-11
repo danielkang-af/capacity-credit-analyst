@@ -1737,14 +1737,62 @@ function exportTableXLSX(){
 
 document.getElementById('exportBtn').addEventListener('click',()=>{
   if(!lastG)return;
-  const wb2=XLSX.utils.book_new();
+  const filtered=getFilteredData();
+  const c=getCurrentCols();
+  const wb=XLSX.utils.book_new();
+  const grandTotal=lastG.grandTotal;
+  const etEntries=Object.entries(lastG.breakdown).sort((a,b)=>b[1].credits-a[1].credits);
+  const activeEts=sortedEtKeys(etEntries.map(([et])=>et));
   const totVol=Object.values(lastG.breakdown).reduce((a,b)=>a+b.volume,0);
-  const sum=[['Event Type','Volume','Credits','Volume %','Credit %'],...Object.entries(lastG.breakdown).map(([et,d])=>[RULES[et]?.label||et,d.volume,d.credits,((d.volume/totVol)*100).toFixed(1)+'%',((d.credits/lastG.grandTotal)*100).toFixed(1)+'%'])];
-  XLSX.utils.book_append_sheet(wb2,XLSX.utils.aoa_to_sheet(sum),'Summary');
-  const keys=Object.keys(lastGrps).sort();
-  const bd=[['Group','Total Credits','Total Volume','Top Event'],...keys.map(k=>{const top=Object.entries(lastGrps[k].events).sort((a,b)=>b[1].cr-a[1].cr)[0];return[k,lastGrps[k].totalCr,lastGrps[k].totalVol,top?RULES[top[0]]?.label||top[0]:'-'];})];
-  XLSX.utils.book_append_sheet(wb2,XLSX.utils.aoa_to_sheet(bd),'Breakdown');
-  XLSX.writeFile(wb2,`appsflyer_credit_${new Date().toISOString().slice(0,10)}.xlsx`);
+
+  // ── Sheet 1: Overview ───────────────────────────────────────────
+  const accName=cols.accName?[...new Set(filtered.map(r=>r[cols.accName]).filter(Boolean))].join(' / '):'';
+  const accEmail=cols.accEmail?[...new Set(filtered.map(r=>r[cols.accEmail]).filter(Boolean))].join(', '):'';
+  const allDates=[...new Set(filtered.map(r=>fmtDt(r[c.date]||'')).filter(Boolean))].sort();
+  const startDt=allDates[0]||'', endDt=allDates[allDates.length-1]||'';
+  const now=new Date().toISOString().slice(0,16).replace('T',' ');
+
+  const overviewRows=[
+    ['AppsFlyer  |  Capacity Credit Analyst','','','','',''],
+    ['','','','','',''],
+    ['Account', accName||'—','','','',''],
+    ['Email', accEmail||'—','','','',''],
+    ['Period', `${startDt}  →  ${endDt}  (${allDates.length} days)`,'','','',''],
+    ['Generated', now,'','','',''],
+    ['Total Credits', parseFloat(grandTotal.toFixed(4)),'','','',''],
+    ['','','','','',''],
+    ['Event Type','Volume','Credits (cr)','Volume %','Credit %','Rate'],
+    ...activeEts.map(et=>{
+      const d=lastG.breakdown[et]||{volume:0,credits:0};
+      return[RULES[et]?.label||et, Math.round(d.volume), parseFloat(d.credits.toFixed(4)),
+             totVol>0?parseFloat((d.volume/totVol).toFixed(4)):0,
+             grandTotal>0?parseFloat((d.credits/grandTotal).toFixed(4)):0,
+             `${RULES[et]?.rate} cr / ${parseInt(RULES[et]?.unit).toLocaleString()}`];
+    }),
+    ['Total', Math.round(totVol), parseFloat(grandTotal.toFixed(4)), 1, 1, ''],
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(overviewRows), 'Overview');
+
+  // ── Sheet 2: Daily Pivot ────────────────────────────────────────
+  const dailyGrps=groupData(filtered,'daily');
+  const dailyDates=Object.keys(dailyGrps).sort();
+  const pivotHeader=['Date',...activeEts.map(et=>RULES[et]?.label||et),'Total Cr'];
+  const pivotRows=dailyDates.map(dt=>{
+    const rowTot=parseFloat(activeEts.reduce((s,et)=>s+(dailyGrps[dt]?.events[et]?.cr||0),0).toFixed(4));
+    return[dt,...activeEts.map(et=>parseFloat((dailyGrps[dt]?.events[et]?.cr||0).toFixed(4))),rowTot];
+  });
+  const pivotTotal=['Total',...activeEts.map(et=>parseFloat((lastG.breakdown[et]?.credits||0).toFixed(4))),parseFloat(grandTotal.toFixed(4))];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([pivotHeader,...pivotRows,pivotTotal]), 'Daily Pivot');
+
+  // ── Sheet 3: Credit Rules ───────────────────────────────────────
+  const rulesRows=[
+    ['Event Type','Credits','Per','Formula'],
+    ...Object.entries(RULES).map(([,r])=>[r.label,`${r.rate} cr`,`per ${parseInt(r.unit).toLocaleString()}`,`(volume ÷ ${parseInt(r.unit).toLocaleString()}) × ${r.rate}`]),
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(rulesRows), 'Credit Rules');
+
+  const fname=`appsflyer_credit_${(accName||'report').replace(/\s+/g,'_')}_${endDt||new Date().toISOString().slice(0,10)}.xlsx`;
+  XLSX.writeFile(wb, fname);
 });
 
 document.getElementById('sampleBtn').addEventListener('click',e=>{
