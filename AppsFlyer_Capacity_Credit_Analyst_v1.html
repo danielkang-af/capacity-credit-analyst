@@ -251,6 +251,7 @@ tr:last-child td{border-bottom:none}
     </div>
     <div class="header-meta">
       <button class="update-btn" onclick="document.getElementById('rnModal').classList.add('open')">Release Notes</button>
+      <button class="update-btn" onclick="downloadHTML()">⬇️ Download HTML</button>
       <div class="precise-wrap" style="display:flex;align-items:center;gap:6px">
         <span style="font-size:11px;color:#aaa;font-weight:500">Precise mode</span>
         <div class="tooltip-wrap">
@@ -1754,6 +1755,16 @@ document.getElementById('sampleBtn').addEventListener('click',e=>{
   document.getElementById('sheetSelectWrap').style.display='none';
 });
 
+
+function downloadHTML(){
+  const html=document.documentElement.outerHTML;
+  const blob=new Blob(['<!DOCTYPE html>'+html],{type:'text/html;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='AppsFlyer_Capacity_Credit_Analyst_v1.html';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
 function renderRNContent(){
   const el=document.getElementById('rnContent');if(!el)return;
   const isEn=lang==='en';
@@ -2039,12 +2050,14 @@ function openHowto(){
     {title:'Run analysis',desc:'Select a grouping period (Monthly · Weekly · Daily · Custom) and click <strong>Run Analysis</strong>.'},
     {title:'Review results',desc:'<strong>Overview</strong> — Total credits &amp; event composition summary<br><strong>Table</strong> — Date × event pivot table (Excel export available)<br><strong>Breakdown</strong> — Detailed charts by period<br><strong>Trend</strong> — Change rate analysis<br><strong>Credit Rules</strong> — Applied credit rates'},
     {title:'Precise mode',desc:'Toggle Precise mode in the header to display credits up to 4 decimal places.'},
+    {title:'AI-powered deep analysis',desc:'Click <strong>⬇️ Download HTML</strong> in the header to save this tool as a file.<br>Then upload it to <strong>Claude, ChatGPT, or Gemini</strong> along with your report file — the AI will provide in-depth analysis tailored to your data.'},
   ]:[
     {title:'파일 업로드',desc:'AppsFlyer에서 내보낸 CSV 또는 Excel 파일을 드래그하거나 클릭해서 업로드하세요.<br>Measurement 파일과 ROI360 파일을 동시에 올릴 수 있어요.'},
     {title:'필터 설정',desc:'상단의 앱 · 미디어소스 · 계정 필터로 보고 싶은 데이터 범위를 선택하세요.<br>여러 파일을 올린 경우 파일별 체크박스로 포함 여부를 조정할 수 있어요.'},
     {title:'분석 실행',desc:'기간 그룹핑(월별 · 주별 · 일별 · 직접 선택)을 선택하고 <strong>분석 실행</strong> 버튼을 누르세요.'},
     {title:'결과 확인',desc:'<strong>Overview</strong> — 총 크레딧 · 이벤트별 구성 요약<br><strong>Table</strong> — 날짜 × 이벤트 피벗 테이블 (Excel 다운로드 가능)<br><strong>Breakdown</strong> — 기간별 상세 차트<br><strong>Trend</strong> — 변화율 분석<br><strong>Credit Rules</strong> — 적용된 크레딧 단가 확인'},
     {title:'Precise mode',desc:'헤더의 Precise mode 토글을 켜면 크레딧을 소수점 4자리까지 정확하게 표시해요.'},
+    {title:'AI 심층 분석',desc:'헤더의 <strong>⬇️ Download HTML</strong> 버튼으로 이 툴을 파일로 저장하세요.<br>그런 다음 <strong>Claude, ChatGPT, Gemini</strong> 등 AI 툴에 HTML 파일과 리포트 파일을 함께 업로드하면, AI가 데이터에 맞는 심층 분석을 제공해줘요.'},
   ];
   document.getElementById('howtoBox').innerHTML=`
     <h3>📖 How to use</h3>
