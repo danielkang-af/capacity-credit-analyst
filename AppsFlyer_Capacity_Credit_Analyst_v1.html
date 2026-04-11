@@ -38,7 +38,7 @@ body{font-family:'Space Grotesk',sans-serif;margin:0;padding:0;background:#f9f9f
 .btn{font-size:13px;font-weight:500;padding:6px 16px;border:0.5px solid #ddd;border-radius:6px;background:#fff;cursor:pointer}
 .btn:hover{background:#f5f5f3}
 .btn-primary{background:#1a1a1a;color:#fff;border-color:transparent}
-.btn-primary:hover{opacity:.85}
+.btn-primary:hover{background:#333;opacity:1}
 .spacer{flex:1}
 .tabs{display:flex;border-bottom:0.5px solid #e0e0e0;margin-bottom:1.5rem}
 .tab{font-size:13px;padding:8px 16px;cursor:pointer;color:#888;border-bottom:2px solid transparent;margin-bottom:-0.5px;background:none;border-top:none;border-left:none;border-right:none}
@@ -214,6 +214,31 @@ tr:last-child td{border-bottom:none}
 .howto-step-content span{font-size:12px;color:#888;line-height:1.5}
 .howto-close{display:block;margin:20px auto 0;background:#185FA5;color:#fff;border:none;border-radius:8px;padding:10px 32px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Space Grotesk',sans-serif}
 .howto-close:hover{background:#1450a0}
+
+.insights-wrap{padding:4px 0}
+.insights-section{margin-bottom:24px}
+.insights-section-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#888;margin:0 0 12px}
+.insight-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.insight-card{border-radius:10px;padding:14px 16px;border:1px solid transparent}
+.insight-card.good{background:#f0faf4;border-color:#b8e6c8}
+.insight-card.bad{background:#fff5f5;border-color:#ffc5c5}
+.insight-card.neutral{background:#f5f7ff;border-color:#d0d8f0}
+.insight-card.warn{background:#fffbf0;border-color:#fde8a0}
+.insight-card-header{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.insight-card-icon{font-size:16px;line-height:1}
+.insight-card-title{font-size:13px;font-weight:600;color:#1a1a1a}
+.insight-card-body{font-size:12px;color:#555;line-height:1.6}
+.insight-card-body strong{color:#1a1a1a}
+.insight-card-metric{font-size:18px;font-weight:700;color:#1a1a1a;margin:4px 0 2px}
+.insight-card-metric.good{color:#1a7a3c}
+.insight-card-metric.bad{color:#c0392b}
+.insight-card-metric.warn{color:#c47a00}
+.prompt-copy-wrap{background:#1a1a1a;border-radius:12px;padding:20px 24px;margin-top:8px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.prompt-copy-desc{color:#ccc;font-size:13px;line-height:1.5}
+.prompt-copy-desc strong{color:#fff}
+.prompt-copy-btn{background:#185FA5;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Space Grotesk',sans-serif;white-space:nowrap;flex-shrink:0;transition:background .15s}
+.prompt-copy-btn:hover{background:#1450a0}
+.prompt-copy-btn.copied{background:#1a7a3c}
 </style>
 </head>
 <body>
@@ -241,7 +266,7 @@ tr:last-child td{border-bottom:none}
         <button class="lang-btn" id="langEn" onclick="setLang('en')">EN</button>
       </div>
       <button class="howto-btn" onclick="openHowto()">❓ How to use</button>
-      <span class="version-tag">mk I · v1.17</span>
+      <span class="version-tag">mk I · v1.18</span>
       <span class="badge">PRO</span>
     </div>
   </div>
@@ -355,6 +380,7 @@ tr:last-child td{border-bottom:none}
       <button class="tab" onclick="switchTab('table')" data-i18n="tabTable">Table</button>
       <button class="tab" onclick="switchTab('breakdown')" data-i18n="tabBreakdown">Breakdown</button>
       <button class="tab" onclick="switchTab('trend')" data-i18n="tabTrend">Trend</button>
+      <button class="tab" onclick="switchTab('insights')" data-i18n="tabInsights">Insights</button>
       <button class="tab" onclick="switchTab('rules')" data-i18n="tabRules">Credit Rules</button>
       <button class="tab" id="tabBtnAI" onclick="switchTab('ai')" data-i18n="tabAI" style="display:none">AI Insights</button>
     </div>
@@ -362,6 +388,7 @@ tr:last-child td{border-bottom:none}
     <div id="tabBreakdown" class="panel"></div>
     <div id="tabTrend" class="panel"></div>
     <div id="tabTable" class="panel"></div>
+    <div id="tabInsights" class="panel"></div>
     <div id="tabRules" class="panel"></div>
     <div id="tabAI" class="panel"></div>
   </div>
@@ -421,7 +448,7 @@ const I18N={
     sampleBtn:'샘플 데이터로 테스트하기',
     groupMonthly:'월별',groupWeekly:'주별',groupDaily:'일별',groupMedia:'미디어소스별',groupCustom:'기간 직접 선택',
     exportBtn:'엑셀 다운로드',analyzeBtn:'분석 실행',
-    tabOverview:'Overview',tabBreakdown:'Breakdown',tabTrend:'Trend',tabRules:'Credit Rules',tabAI:'AI Insights',
+    tabOverview:'Overview',tabBreakdown:'Breakdown',tabTrend:'Trend',tabInsights:'Insights',tabRules:'Credit Rules',tabAI:'AI Insights',
     totalCredits:'총 크레딧',totalVolume:'총 데이터 볼륨',eventTypes:'이벤트 타입',topCredit:'최대 크레딧 기여',
     account:'Account',totalEvents:'Total events',
     volTitle:'데이터 사용량 구성',volSub:'이벤트별 실제 볼륨 비중',
@@ -472,7 +499,7 @@ const I18N={
     sampleBtn:'Try with sample data',
     groupMonthly:'Monthly',groupWeekly:'Weekly',groupDaily:'Daily',groupMedia:'By Media Source',groupCustom:'Custom Range',
     exportBtn:'Export Excel',analyzeBtn:'Run Analysis',
-    tabOverview:'Overview',tabBreakdown:'Breakdown',tabTrend:'Trend',tabRules:'Credit Rules',tabAI:'AI Insights',
+    tabOverview:'Overview',tabBreakdown:'Breakdown',tabTrend:'Trend',tabInsights:'Insights',tabRules:'Credit Rules',tabAI:'AI Insights',
     totalCredits:'Total Credits',totalVolume:'Total Volume',eventTypes:'Event Types',topCredit:'Top Credit Driver',
     account:'Account',totalEvents:'Total events',
     volTitle:'Volume Breakdown',volSub:'Share by event type',
@@ -965,6 +992,7 @@ function runAll(){
   applyLangToStatic();
   tblSortCol='dt'; tblSortAsc=true;
   renderOverview();renderBreakdown();renderTrend();renderRules();
+  if(document.getElementById('tabInsights'))setTimeout(()=>{if(lastG)renderInsights();},200);
   document.getElementById('tabAI').innerHTML='<div class="empty">AI Insights 탭을 클릭하면 분석이 시작됩니다.</div>';
   switchTab('overview');
 }
@@ -1187,11 +1215,235 @@ async function renderAI(){
 
 function switchTab(name){
   document.querySelectorAll('[data-i18n]').forEach(el=>{const k=el.dataset.i18n;if(I18N[lang][k])el.textContent=I18N[lang][k];});
-  const names=['overview','breakdown','trend','table','rules','ai'];
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',names[i]===name));
-  document.querySelectorAll('.panel').forEach((p,i)=>p.classList.toggle('active',names[i]===name));
+  // 버튼과 패널을 이름 기반으로 매칭 (순서 독립적)
+  document.querySelectorAll('.tab').forEach(t=>{
+    const fn=t.getAttribute('onclick')||'';
+    const m=fn.match(/switchTab\('(\w+)'\)/);
+    if(m)t.classList.toggle('active',m[1]===name);
+  });
+  const panelId='tab'+(name==='ai'?'AI':name.charAt(0).toUpperCase()+name.slice(1));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.toggle('active',p.id===panelId));
   if(name==='ai'&&lastG&&document.getElementById('tabAI').innerHTML.includes('클릭하면'))renderAI();
   if(name==='table'&&lastG)renderTable();
+  if(name==='insights'&&lastG)renderInsights();
+}
+
+
+function renderInsights(){
+  const g=lastG;const grps=lastGrps;
+  const keys=Object.keys(grps).sort();
+  const c=getCurrentCols();
+  const filtered=getFilteredData();
+  const isEn=lang==='en';
+  const v118=isEn?[
+    'Insights tab added — automatic Good/Bad signal detection based on data patterns',
+    'Good signals: credit decrease trend, low high-cost event share, stable usage pattern',
+    'Bad signals: credit surge, abnormal spike detection, Data Transfer over-concentration, high-cost event dominance',
+    'Summary cards: top credit driver, 30-day forecast, active event count',
+    'AI prompt copy — one-click copy of structured data prompt for ChatGPT/Claude analysis',
+  ]:[
+    'Insights 탭 추가 — 데이터 기반 Good/Bad 신호 자동 감지',
+    '긍정 신호: 크레딧 감소 추세, 고단가 이벤트 비중 낮음, 안정적 사용 패턴',
+    '주의 신호: 크레딧 급증, 이상치 스파이크 감지, Data Transfer 집중, 고단가 이벤트 과다',
+    '요약 카드: 최대 크레딧 드라이버, 30일 예상치, 활성 이벤트 타입',
+    'AI 분석 프롬프트 복사 — 클릭 한 번으로 ChatGPT·Claude용 데이터 프롬프트 복사',
+  ];
+
+  // ── 기본 통계 ────────────────────────────────────────────────────────────
+  const totalCr=g.grandTotal;
+  const breakdown=g.breakdown;
+  const etEntries=Object.entries(breakdown).sort((a,b)=>b[1].credits-a[1].credits);
+  const topEt=etEntries[0];
+  const topPct=totalCr>0?((topEt[1].credits/totalCr)*100):0;
+
+  // ── 트렌드: 최근 7일 vs 이전 7일 ───────────────────────────────────────
+  const allDates=[...new Set(filtered.map(r=>fmtDt(r[c.date]||'')).filter(Boolean))].sort();
+  const dayCount=allDates.length;
+  const today=allDates[allDates.length-1];
+  const nDaysAgo=n=>{const d=new Date(today);d.setDate(d.getDate()-n);return d.toISOString().slice(0,10);};
+  const crInRange=(from,to)=>{
+    const tv={};filtered.forEach(r=>{const dt=fmtDt(r[c.date]||'');if(dt<from||dt>to)return;
+      const rb=c.recordBy?r[c.recordBy]:(r['record_by']||null);const et=mapEv(r[c.event],rb);if(!et)return;
+      const v=parseFloat(r[c.volume])||0;tv[et]=(tv[et]||0)+v;});
+    let cr=0;Object.entries(tv).forEach(([et,v])=>{cr+=calcCr(et,v);});return parseFloat(cr.toFixed(2));
+  };
+  const last7=dayCount>=7?crInRange(nDaysAgo(6),today):null;
+  const prev7=dayCount>=14?crInRange(nDaysAgo(13),nDaysAgo(7)):null;
+  const trendPct=last7&&prev7&&prev7>0?((last7-prev7)/prev7*100):null;
+
+  // ── 일별 변동성 (이상치 감지) ────────────────────────────────────────────
+  const dailyCr=keys.map(k=>grps[k].totalCr);
+  const avgCr=dailyCr.reduce((a,b)=>a+b,0)/dailyCr.length;
+  const maxCr=Math.max(...dailyCr);
+  const maxDay=keys[dailyCr.indexOf(maxCr)];
+  const spikePct=avgCr>0?((maxCr-avgCr)/avgCr*100):0;
+
+  // ── 고단가 이벤트 비중 ───────────────────────────────────────────────────
+  const highCostEts=['non organic installs','non organic installs (skan)','re-attribution','re-attribution (skan)'];
+  const highCostCr=highCostEts.reduce((s,et)=>s+(breakdown[et]?.credits||0),0);
+  const highCostPct=totalCr>0?(highCostCr/totalCr*100):0;
+
+  // ── Data Locker 비중 ────────────────────────────────────────────────────
+  const dlCr=(breakdown['datalocker-raw']?.credits||0)+(breakdown['datalocker-aggregated']?.credits||0)
+            +(breakdown['pull api rows']?.credits||0)+(breakdown['push api rows']?.credits||0);
+  const dlPct=totalCr>0?(dlCr/totalCr*100):0;
+
+  // ── 월말 예상 크레딧 ────────────────────────────────────────────────────
+  const avgDaily=totalCr/dayCount;
+  const est30=parseFloat((avgDaily*30).toFixed(1));
+
+  // ── Good / Bad / Neutral 카드 생성 ──────────────────────────────────────
+  const goods=[], bads=[], neutrals=[];
+
+  // Good: 트렌드 감소
+  if(trendPct!==null&&trendPct<-5)
+    goods.push({icon:'📉',title:isEn?'Credit usage decreasing':'크레딧 사용량 감소 추세',
+      metric:`${trendPct.toFixed(1)}%`,metricClass:'good',
+      body:isEn?`Last 7 days vs previous 7 days. Efficient credit management.`
+               :`최근 7일이 이전 7일 대비 ${Math.abs(trendPct).toFixed(1)}% 감소. 크레딧 효율이 개선되고 있어요.`});
+
+  // Good: 고단가 비중 낮음
+  if(highCostPct<20&&highCostCr>0)
+    goods.push({icon:'✅',title:isEn?'High-cost event share is low':'고단가 이벤트 비중 낮음',
+      metric:`${highCostPct.toFixed(1)}%`,metricClass:'good',
+      body:isEn?`Non-Organic Installs & Re-attribution account for only ${highCostPct.toFixed(1)}% of total credits.`
+               :`Non-Organic Installs · Re-attribution 합산이 전체의 ${highCostPct.toFixed(1)}%로 낮아요.`});
+
+  // Good: 안정적 사용
+  const stdDev=Math.sqrt(dailyCr.reduce((s,v)=>s+Math.pow(v-avgCr,2),0)/dailyCr.length);
+  const cv=avgCr>0?(stdDev/avgCr*100):0;
+  if(cv<20&&dayCount>=7)
+    goods.push({icon:'📊',title:isEn?'Stable credit usage':'안정적인 크레딧 사용 패턴',
+      metric:`CV ${cv.toFixed(1)}%`,metricClass:'good',
+      body:isEn?`Day-to-day variation is low (CV < 20%). No unusual spikes detected.`
+               :`일별 크레딧 변동이 낮아요 (변동계수 ${cv.toFixed(1)}%). 이상 급증 없음.`});
+
+  // Bad: 트렌드 급증
+  if(trendPct!==null&&trendPct>30)
+    bads.push({icon:'🚨',title:isEn?'Credit usage surging':'크레딧 사용량 급증',
+      metric:`+${trendPct.toFixed(1)}%`,metricClass:'bad',
+      body:isEn?`Last 7 days is ${trendPct.toFixed(1)}% higher than the previous 7 days. Review campaign activity.`
+               :`최근 7일이 이전 7일 대비 ${trendPct.toFixed(1)}% 급증. 캠페인 활동을 확인하세요.`});
+
+  // Bad: 이상치 스파이크
+  if(spikePct>100)
+    bads.push({icon:'⚡',title:isEn?'Abnormal spike detected':'비정상적 급증일 감지',
+      metric:`+${spikePct.toFixed(0)}%`,metricClass:'bad',
+      body:isEn?`${maxDay} shows ${spikePct.toFixed(0)}% above average. Possible data issue or campaign burst.`
+               :`${maxDay}에 평균 대비 ${spikePct.toFixed(0)}% 급증. 데이터 이슈 또는 캠페인 급증을 확인하세요.`});
+
+  // Bad: Data Locker 비중 과다
+  if(dlPct>70)
+    bads.push({icon:'💾',title:isEn?'Data Transfer dominates spend':'Data Transfer 크레딧 집중',
+      metric:`${dlPct.toFixed(1)}%`,metricClass:'bad',
+      body:isEn?`Data Transfer (Locker/API) accounts for ${dlPct.toFixed(1)}% of credits. Consider reviewing data export volume.`
+               :`Data Transfer가 전체의 ${dlPct.toFixed(1)}%를 차지해요. 데이터 내보내기 볼륨을 검토해보세요.`});
+
+  // Bad: 고단가 집중
+  if(highCostPct>50)
+    bads.push({icon:'💸',title:isEn?'High-cost events dominating':'고단가 이벤트 비중 과다',
+      metric:`${highCostPct.toFixed(1)}%`,metricClass:'bad',
+      body:isEn?`Installs & Re-attribution account for ${highCostPct.toFixed(1)}% of total credits. High credit burn rate.`
+               :`Installs · Re-attribution이 전체의 ${highCostPct.toFixed(1)}%. 크레딧 소진 속도가 빠를 수 있어요.`});
+
+  // Neutral: Top 드라이버
+  neutrals.push({icon:'🏆',title:isEn?'Top credit driver':'최대 크레딧 드라이버',
+    metric:`${topPct.toFixed(1)}%`,metricClass:'',
+    body:isEn?`<strong>${RULES[topEt[0]]?.label||topEt[0]}</strong> accounts for ${topPct.toFixed(1)}% of total credits (${fmtCrPlain(topEt[1].credits)} cr).`
+             :`<strong>${RULES[topEt[0]]?.label||topEt[0]}</strong>이 전체 크레딧의 ${topPct.toFixed(1)}%를 차지해요 (${fmtCrPlain(topEt[1].credits)} cr).`});
+
+  // Neutral: 30일 예상
+  neutrals.push({icon:'📅',title:isEn?'30-day credit forecast':'30일 크레딧 예상치',
+    metric:`${fmtCompact(est30)} cr`,metricClass:'',
+    body:isEn?`At current pace (${fmtCrPlain(avgDaily)} cr/day average), estimated 30-day total: <strong>${fmtCompact(est30)} cr</strong>.`
+             :`현재 페이스(일 평균 ${fmtCrPlain(avgDaily)} cr) 기준 30일 예상: <strong>${fmtCompact(est30)} cr</strong>.`});
+
+  // Neutral: 이벤트 다양성
+  const etCount=Object.keys(breakdown).length;
+  neutrals.push({icon:'🎯',title:isEn?'Active event types':'활성 이벤트 타입',
+    metric:`${etCount}개`,metricClass:'',
+    body:isEn?`${etCount} event types detected. ${etEntries.slice(0,3).map(([et])=>RULES[et]?.label||et).join(', ')} are the top 3.`
+             :`${etCount}개 이벤트 타입 감지. 상위 3개: ${etEntries.slice(0,3).map(([et])=>RULES[et]?.label||et).join(', ')}.`});
+
+  const mkCard=(card,type)=>`
+    <div class="insight-card ${type}">
+      <div class="insight-card-header">
+        <span class="insight-card-icon">${card.icon}</span>
+        <span class="insight-card-title">${card.title}</span>
+      </div>
+      <div class="insight-card-metric ${card.metricClass}">${card.metric}</div>
+      <div class="insight-card-body">${card.body}</div>
+    </div>`;
+
+  const noSignal=(type)=>type==='good'
+    ?(isEn?'<p style="font-size:13px;color:#888;margin:0">No notable positive signals detected.</p>'
+           :'<p style="font-size:13px;color:#888;margin:0">현재 특별한 긍정 신호가 없어요.</p>')
+    :(isEn?'<p style="font-size:13px;color:#888;margin:0">No warning signals detected. Looks healthy!</p>'
+           :'<p style="font-size:13px;color:#888;margin:0">주의 신호 없음. 정상 범위예요! 🎉</p>');
+
+  // ── 프롬프트 생성 ────────────────────────────────────────────────────────
+  const accName=cols.accName?[...new Set(filtered.map(r=>r[cols.accName]).filter(Boolean))].join(' / '):'';
+  const accEmail=cols.accEmail?[...new Set(filtered.map(r=>r[cols.accEmail]).filter(Boolean))].join(', '):'';
+  const prompt=`아래는 AppsFlyer 크레딧 사용량 데이터입니다. 이를 바탕으로 심층 분석을 제공해주세요.
+
+[계정] ${accName||'—'} ${accEmail?`(${accEmail})`:''}
+[분석 기간] ${allDates[0]} ~ ${today} (${dayCount}일)
+[총 크레딧] ${fmtCrPlain(totalCr)} cr
+
+[이벤트별 크레딧 사용량]
+${etEntries.map(([et,d])=>`- ${RULES[et]?.label||et}: ${fmtCrPlain(d.credits)} cr (${((d.credits/totalCr)*100).toFixed(1)}%)`).join('\n')}
+
+[기간별 일일 크레딧]
+${keys.map(k=>`- ${k}: ${fmtCrPlain(grps[k].totalCr)} cr`).join('\n')}
+
+[자동 감지 신호]
+${goods.length?'🟢 긍정: '+goods.map(g=>g.title+' ('+g.metric+')').join(', '):'🟢 긍정 신호 없음'}
+${bads.length?'🔴 주의: '+bads.map(b=>b.title+' ('+b.metric+')').join(', '):'🔴 주의 신호 없음'}
+
+[30일 예상 크레딧] ${fmtCrPlain(est30)} cr
+
+---
+위 데이터를 기반으로 다음을 분석해주세요:
+1. 크레딧 사용 패턴의 주요 특징
+2. 이상 징후 또는 주목할 변화
+3. 크레딧 효율화를 위한 구체적 권고사항
+4. 향후 크레딧 소진 속도에 대한 예측`;
+
+  document.getElementById('tabInsights').innerHTML=`
+    <div class="insights-wrap">
+      <div class="insights-section">
+        <p class="insights-section-title">🟢 ${isEn?'Good Signals':'긍정 신호'}</p>
+        <div class="insight-cards">${goods.length?goods.map(c=>mkCard(c,'good')).join(''):noSignal('good')}</div>
+      </div>
+      <div class="insights-section">
+        <p class="insights-section-title">🔴 ${isEn?'Warning Signals':'주의 신호'}</p>
+        <div class="insight-cards">${bads.length?bads.map(c=>mkCard(c,'bad')).join(''):noSignal('bad')}</div>
+      </div>
+      <div class="insights-section">
+        <p class="insights-section-title">📊 ${isEn?'Summary':'요약 정보'}</p>
+        <div class="insight-cards">${neutrals.map(c=>mkCard(c,'neutral')).join('')}</div>
+      </div>
+      <div class="prompt-copy-wrap">
+        <div class="prompt-copy-desc">
+          <strong>${isEn?'Want deeper analysis?':'더 깊은 분석이 필요하신가요?'}</strong><br>
+          ${isEn?'Copy the data prompt below and paste it into ChatGPT, Claude, or any AI tool.'
+                :'아래 버튼을 눌러 데이터 프롬프트를 복사하고, ChatGPT · Claude 등 AI 툴에 붙여넣으세요.'}
+        </div>
+        <button class="prompt-copy-btn" id="promptCopyBtn" onclick="copyPrompt(\`${prompt.replace(/`/g,'\\`')}\`)">
+          📋 ${isEn?'Copy AI Prompt':'AI 분석 프롬프트 복사'}
+        </button>
+      </div>
+    </div>`;
+}
+
+function copyPrompt(text){
+  navigator.clipboard.writeText(text).then(()=>{
+    const btn=document.getElementById('promptCopyBtn');
+    const orig=btn.innerHTML;
+    btn.innerHTML='✅ '+(lang==='en'?'Copied!':'복사됐어요!');
+    btn.classList.add('copied');
+    setTimeout(()=>{btn.innerHTML=orig;btn.classList.remove('copied');},2500);
+  });
 }
 
 // ── TABLE TAB ─────────────────────────────────────────
@@ -1505,6 +1757,19 @@ document.getElementById('sampleBtn').addEventListener('click',e=>{
 function renderRNContent(){
   const el=document.getElementById('rnContent');if(!el)return;
   const isEn=lang==='en';
+  const v118=isEn?[
+    'Insights tab added — automatic Good/Bad signal detection based on data patterns',
+    'Good signals: credit decrease trend, low high-cost event share, stable usage pattern',
+    'Bad signals: credit surge, abnormal spike detection, Data Transfer over-concentration, high-cost event dominance',
+    'Summary cards: top credit driver, 30-day forecast, active event count',
+    'AI prompt copy — one-click copy of structured data prompt for ChatGPT/Claude analysis',
+  ]:[
+    'Insights 탭 추가 — 데이터 기반 Good/Bad 신호 자동 감지',
+    '긍정 신호: 크레딧 감소 추세, 고단가 이벤트 비중 낮음, 안정적 사용 패턴',
+    '주의 신호: 크레딧 급증, 이상치 스파이크 감지, Data Transfer 집중, 고단가 이벤트 과다',
+    '요약 카드: 최대 크레딧 드라이버, 30일 예상치, 활성 이벤트 타입',
+    'AI 분석 프롬프트 복사 — 클릭 한 번으로 ChatGPT·Claude용 데이터 프롬프트 복사',
+  ];
   const v117=isEn?[
     'Tab order changed — Overview → Table → Breakdown → Trend → Credit Rules',
     'How to use guide added — click ❓ button in header to open step-by-step instructions',
@@ -1685,7 +1950,8 @@ function renderRNContent(){
   ];
 
   const sections=[
-    {tag:'v1.17',date:'2026-04-11',current:true,items:v117},
+    {tag:'v1.18',date:'2026-04-11',current:true,items:v118},
+    {tag:'v1.17',date:'2026-04-11',items:v117},
     {tag:'v1.16',date:'2026-04-11',items:v116},
     {tag:'v1.15',date:'2026-04-08',items:v115},
     {tag:'v1.14',date:'2026-04-08',items:v114},
@@ -1754,6 +2020,19 @@ fi.addEventListener('change',e=>{[...e.target.files].forEach(handleFile);e.targe
 <script>
 function openHowto(){
   const isEn=lang==='en';
+  const v118=isEn?[
+    'Insights tab added — automatic Good/Bad signal detection based on data patterns',
+    'Good signals: credit decrease trend, low high-cost event share, stable usage pattern',
+    'Bad signals: credit surge, abnormal spike detection, Data Transfer over-concentration, high-cost event dominance',
+    'Summary cards: top credit driver, 30-day forecast, active event count',
+    'AI prompt copy — one-click copy of structured data prompt for ChatGPT/Claude analysis',
+  ]:[
+    'Insights 탭 추가 — 데이터 기반 Good/Bad 신호 자동 감지',
+    '긍정 신호: 크레딧 감소 추세, 고단가 이벤트 비중 낮음, 안정적 사용 패턴',
+    '주의 신호: 크레딧 급증, 이상치 스파이크 감지, Data Transfer 집중, 고단가 이벤트 과다',
+    '요약 카드: 최대 크레딧 드라이버, 30일 예상치, 활성 이벤트 타입',
+    'AI 분석 프롬프트 복사 — 클릭 한 번으로 ChatGPT·Claude용 데이터 프롬프트 복사',
+  ];
   const steps=isEn?[
     {title:'Upload your file',desc:'Drag & drop or click to upload CSV or Excel files exported from AppsFlyer.<br>You can upload Measurement and ROI360 files at the same time.'},
     {title:'Set filters',desc:'Use the App · Media Source · Account filters at the top to narrow down your data.<br>If multiple files are uploaded, toggle individual files using the checkboxes.'},
