@@ -1393,8 +1393,8 @@ function renderInsights(){
 [이벤트별 크레딧 사용량]
 ${etEntries.map(([et,d])=>`- ${RULES[et]?.label||et}: ${fmtCrPlain(d.credits)} cr (${((d.credits/totalCr)*100).toFixed(1)}%)`).join('\n')}
 
-[기간별 일일 크레딧]
-${keys.map(k=>`- ${k}: ${fmtCrPlain(grps[k].totalCr)} cr`).join('\n')}
+[기간별 일일 크레딧 (일별 기준)]
+${(()=>{const dg=groupData(filtered,'daily');return Object.keys(dg).sort().map(k=>`- ${k}: ${fmtCrPlain(dg[k].totalCr)} cr`).join('\n');})()}
 
 [자동 감지 신호]
 ${goods.length?'🟢 긍정: '+goods.map(g=>g.title+' ('+g.metric+')').join(', '):'🟢 긍정 신호 없음'}
