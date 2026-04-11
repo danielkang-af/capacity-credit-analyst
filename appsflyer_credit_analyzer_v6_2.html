@@ -214,7 +214,7 @@ tr:last-child td{border-bottom:none}
         <button class="lang-btn active" id="langKo" onclick="setLang('ko')">KO</button>
         <button class="lang-btn" id="langEn" onclick="setLang('en')">EN</button>
       </div>
-      <span class="version-tag">mk I · v6.15</span>
+      <span class="version-tag">mk I · v6.16</span>
       <span class="badge">PRO</span>
     </div>
   </div>
@@ -322,7 +322,7 @@ tr:last-child td{border-bottom:none}
     <div id="tabAI" class="panel"></div>
   </div>
     </div><!-- /section-results-content -->
-    <div class="af-footer">created by Daniel Kang &nbsp;·&nbsp; 🐛 Bug report? <a href="https://appsflyer.enterprise.slack.com/team/danielkang" style="color:#999;text-decoration:underline;text-underline-offset:2px">DM me on Slack</a></div>
+    <div class="af-footer">created by Daniel Kang &nbsp;·&nbsp; 🐛 For bug reporting: <a href="mailto:daniel.kang@appsflyer.com" style="color:#999;text-decoration:underline;text-underline-offset:2px">daniel.kang@appsflyer.com</a></div>
     <div class="section-results-bg"></div>
   </div><!-- /section-results -->
 
@@ -351,6 +351,8 @@ const RULES = {
   'in-app events':       { unit:1e6,  rate:2,  label:'In-App Events' },
   'datalocker-aggregated':{ unit:1e6,  rate:2,  label:'Data Locker (Aggregated)' },
   'datalocker-raw':       { unit:1e6,  rate:2,  label:'Data Locker (Raw)' },
+  'pull api rows':        { unit:1e6,  rate:2,  label:'Pull API' },
+  'push api rows':        { unit:1e6,  rate:2,  label:'Push API' },
   'tracked_cost_usd':     { unit:1e5,  rate:60, label:'ROI360 Cost' },
   'tracked_ad_revenue_usd':{ unit:1e5, rate:60, label:'ROI360 Ad Revenue' },
   'tracked_purchase_revenue_usd':{ unit:1e5, rate:60, label:'ROI360 Purchase Revenue' },
@@ -358,7 +360,7 @@ const RULES = {
 
 
 // 이벤트 표시 순서 고정 (Credit Rules 순서)
-const EVENT_ORDER=['impressions','clicks','non organic installs','non organic installs (skan)','re-attribution','re-attribution (skan)','re-engagements','in-app events','datalocker-aggregated','datalocker-raw','tracked_cost_usd','tracked_ad_revenue_usd','tracked_purchase_revenue_usd'];
+const EVENT_ORDER=['impressions','clicks','non organic installs','non organic installs (skan)','re-attribution','re-attribution (skan)','re-engagements','in-app events','datalocker-aggregated','datalocker-raw','pull api rows','push api rows','tracked_cost_usd','tracked_ad_revenue_usd','tracked_purchase_revenue_usd'];
 function sortedEtKeys(etKeys){
   return [...etKeys].sort((a,b)=>{
     const ai=EVENT_ORDER.indexOf(a);const bi=EVENT_ORDER.indexOf(b);
@@ -511,6 +513,8 @@ function mapEv(raw, recordBy) {
   // Datalocker
   if (s==='datalocker-aggregated'||s==='datalocker aggregated') return 'datalocker-aggregated';
   if (s==='datalocker-raw'||s==='datalocker raw') return 'datalocker-raw';
+  if (s==='pull api rows'||s==='pull api') return 'pull api rows';
+  if (s==='push api rows'||s==='push api') return 'push api rows';
   // ROI360
   if (s==='tracked_cost_usd'||s==='tracked cost usd') return 'tracked_cost_usd';
   if (s==='tracked_ad_revenue_usd'||s==='tracked ad revenue usd') return 'tracked_ad_revenue_usd';
@@ -545,6 +549,15 @@ function fmtCrPlain(n){
 function calcCr(key,vol){const r=RULES[key];return r?parseFloat(((vol/r.unit)*r.rate).toFixed(4)):0;}
 function fmt(n,d=4){return parseFloat(n).toFixed(d);}
 function fmtN(n){return Number(n).toLocaleString();}
+function fmtCompact(n){
+  const v=parseFloat(n);
+  if(isNaN(v))return '—';
+  if(v>=1e12)return (v/1e12).toFixed(2).replace(/\.?0+$/,'')+'T';
+  if(v>=1e9)return (v/1e9).toFixed(2).replace(/\.?0+$/,'')+'B';
+  if(v>=1e6)return (v/1e6).toFixed(2).replace(/\.?0+$/,'')+'M';
+  if(v>=1e3)return (v/1e3).toFixed(1).replace(/\.?0+$/,'')+'K';
+  return v.toLocaleString();
+}
 function fmtDt(dt){if(!dt)return '';return String(dt).replace(/T.*/,'').replace(' 00:00:00','');}
 function pct(a,b){return b?((a-b)/b*100).toFixed(1):null;}
 function textColor(){return 'rgba(0,0,0,0.45)';}
@@ -566,6 +579,8 @@ const EVENT_COLORS={
   'in-app events':         '#1D9E75',
   'datalocker-aggregated':  '#534AB7',
   'datalocker-raw':         '#7B5EA7',
+  'pull api rows':          '#8B6FBF',
+  'push api rows':          '#A085CC',
   'tracked_cost_usd':       '#D4537E',
   'tracked_ad_revenue_usd': '#BA7517',
   'tracked_purchase_revenue_usd': '#E24B4A',
@@ -869,7 +884,7 @@ function renderOverview(){
     <div class="metric-grid">
       ${accountCard}
       <div class="mc"><p class="mc-label" data-i18n="totalCredits">총 크레딧</p><p class="mc-val">${fmtCr(g.grandTotal)}</p><p class="mc-sub">${t('mcSubTotalCredits')}</p></div>
-      <div class="mc"><p class="mc-label" data-i18n="totalVolume">총 데이터 볼륨</p><p class="mc-val">${fmtN(Object.values(g.breakdown).reduce((a,b)=>a+b.volume,0))}</p><p class="mc-sub">${t('mcSubTotalEvents')}</p></div>
+      <div class="mc tooltip-wrap"><p class="mc-label" data-i18n="totalVolume">총 데이터 볼륨</p><p class="mc-val">${fmtCompact(Object.values(g.breakdown).reduce((a,b)=>a+b.volume,0))}</p><p class="mc-sub">${t('mcSubTotalEvents')}</p><div class="tooltip-box" style="font-size:12px;white-space:nowrap">${fmtN(Object.values(g.breakdown).reduce((a,b)=>a+b.volume,0))}</div></div>
       <div class="mc"><p class="mc-label" data-i18n="eventTypes">이벤트 타입</p><p class="mc-val">${Object.keys(g.breakdown).length}</p><p class="mc-sub">${t('mcSubEventTypes')}</p></div>
       <div class="mc"><p class="mc-label" data-i18n="topCredit">최대 크레딧 기여</p><p class="mc-val" style="font-size:13px">${largest?RULES[largest[0]].label:'N/A'}</p><p class="mc-sub">${largest?fmtCr(largest[1].credits)+' cr':''}</p></div>
       ${extraCards.map(card=>`<div class="mc"><p class="mc-label">${card.label}</p><p class="mc-val">${card.val}</p><p class="mc-sub">${card.sub}</p></div>`).join('')}
@@ -1372,27 +1387,32 @@ document.getElementById('sampleBtn').addEventListener('click',e=>{
 function renderRNContent(){
   const el=document.getElementById('rnContent');if(!el)return;
   const isEn=lang==='en';
-  const v615=isEn?[
-    'v6.14a — SKAN credits fixed: Non Organic Installs (SKAN) and Re-attribution (SKAN) were missing from RULES object, causing 0.0000 cr despite correct volume',
-    'v6.14b — Precise mode: comma separator added to integer part (e.g. 22,796.0232), decimal digits shown in blue',
-    'v6.14c — Table Total column moved to second position (after Date)',
-    'v6.14d — Table app filter upgraded to multi-select checkbox dropdown (same as Overview)',
+  const v616=isEn?[
+    'Pull API and Push API added as new event types — classified as Data Transfer (2cr per 1M rows)',
+    'Credit Rules tab updated to reflect Data Transfer category (Data Locker + Pull API + Push API)',
   ]:[
-    'v6.14a — SKAN 크레딧 계산 수정: Non Organic Installs (SKAN) · Re-attribution (SKAN)이 RULES 객체에 누락되어 볼륨이 있어도 0.0000 cr로 표시되던 문제 해결',
-    'v6.14b — Precise mode 개선: 정수 부분 천 단위 쉼표 구분 적용, 소수점 이하 파란색으로 구분 표시',
-    'v6.14c — Table Total 컬럼 두 번째 위치로 이동 (날짜 바로 다음)',
-    'v6.14d — Table 앱 필터를 단일 select → 체크박스 다중선택 드롭다운으로 교체 (Overview와 동일)',
+    'Pull API · Push API 신규 이벤트 타입 추가 — Data Transfer 카테고리 (1M rows당 2cr)',
+    'Credit Rules 탭 업데이트 — Data Transfer 항목에 Data Locker + Pull API + Push API 명시',
+  ];
+  const v615=isEn?[
+    'SKAN credits fixed — Non Organic Installs (SKAN) and Re-attribution (SKAN) were returning 0 cr despite correct volume (missing from credit rules)',
+    'Table Total column moved to second position (right after Date)',
+    'Table app filter — upgraded to multi-select checkbox dropdown',
+    'Precise mode — comma separator added + decimal digits highlighted in blue for readability',
+  ]:[
+    'SKAN 크레딧 계산 수정 — Non Organic Installs (SKAN) · Re-attribution (SKAN) 볼륨이 있어도 0cr이 표시되던 문제 수정 (크레딧 룰 누락)',
+    'Table Total 컬럼 날짜 바로 다음으로 이동',
+    'Table 앱 필터 체크박스 다중선택 드롭다운으로 교체',
+    'Precise mode 개선 — 천 단위 쉼표 구분 + 소수점 이하 파란색 강조 표시',
   ];
   const v614=isEn?[
     'Table Total row moved to top by default',
     'Table column drag-and-drop — reorder event columns by dragging headers',
-    'Precise mode label + tooltip — hover ? icon to see what it does',
-    'Footer: bug report Slack DM link added',
+    'Precise mode tooltip — hover ? icon to see explanation and example',
   ]:[
-    'Table 합계(Total) 행 기본값으로 최상단 이동',
+    'Table 합계(Total) 행 최상단 고정',
     'Table 컬럼 드래그앤드롭 — 헤더 드래그로 이벤트 열 순서 변경',
-    'Precise mode 텍스트 + 툴팁 추가 — ? 아이콘 호버 시 설명 표시',
-    '하단 푸터: Slack DM 버그 리포트 링크 추가',
+    'Precise mode 툴팁 추가 — ? 아이콘 호버 시 설명 및 예시 표시',
   ];
   const v613=isEn?[
     'Data Locker always included — fixed app/media filter excluding rows with empty bundle_id or media_source',
@@ -1459,17 +1479,9 @@ function renderRNContent(){
     '언어 전환 시 모든 동적 렌더 영역 즉시 반영',
   ];
   const v67=isEn?[
-    'Space Grotesk font applied globally',
-    'AppsFlyer official logo embedded in header (visible offline)',
     'Precise mode toggle — switch between integer and 4-decimal credit display',
-    'White sticky header, upload/results section separation',
-    'Bottom AppsFlyer branding image + created by Daniel Kang',
   ]:[
-    'Space Grotesk 폰트 전체 적용',
-    'AppsFlyer 공식 로고 헤더 embed (로컬에서도 표시)',
     'Precise 모드 토글 — 크레딧 정수 / 소수점 4자리 전환',
-    '헤더 흰색 배경 sticky 고정, 업로드·결과 섹션 분리',
-    '하단 AppsFlyer 브랜딩 이미지 + created by Daniel Kang',
   ];
   const v66=isEn?[
     'AI Insights tab — auto-detects API connectivity, hides tab when running offline',
@@ -1542,7 +1554,8 @@ function renderRNContent(){
   ];
 
   const sections=[
-    {tag:'v6.15',date:'2026-04-08',current:true,items:v615},
+    {tag:'v6.16',date:'2026-04-11',current:true,items:v616},
+    {tag:'v6.15',date:'2026-04-08',items:v615},
     {tag:'v6.14',date:'2026-04-08',items:v614},
     {tag:'v6.13',date:'2026-04-08',items:v613},
     {tag:'v6.12',date:'2026-04-08',items:v612},
